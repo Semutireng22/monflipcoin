@@ -16,7 +16,7 @@ const networks = [monadTestnet];
 const metadata = {
   name: 'MON Flipcoin - Blockchain Game on Monad Testnet',
   description: 'Play MON Flipcoin on Monad Testnet, choose Head or Tail, and win MON with a fair and secure gaming experience.',
-  url: 'http://localhost:5173', // Sesuaikan dengan domain saat deploy
+  url: 'https://monflipcoin.vercel.app/', // Sesuaikan dengan domain saat deploy
   icons: ['https://i.ibb.co.com/xtrMr8pf/coin.png'], // Ganti dengan ikonmu
 };
 
