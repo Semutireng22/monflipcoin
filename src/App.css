@@ -18,17 +18,18 @@ body {
   line-height: 1.6;
   overflow-x: hidden;
   transition: all 0.3s ease;
+  color: #0E100F; /* Monad Black untuk teks default di light mode */
 }
 
 /* Definisi Tema Light dan Dark */
 body.light {
-  background-color: #FFFFFF;
-  color: #1A202C;
+  background-color: #FFBFAF9; /* Monad Off-White */
+  color: #0E100F; /* Monad Black */
 }
 
 body.dark {
-  background-color: #1A202C;
-  color: #E2E8F0;
+  background-color: #0E100F; /* Monad Black */
+  color: #FFFFFF; /* White */
 }
 
 /* Wrapper Aplikasi */
@@ -43,7 +44,7 @@ body.dark {
 
 /* Header */
 .app-header {
-  background: linear-gradient(135deg, #00C4FF, #007BFF);
+  background: linear-gradient(135deg, #83EEF9, #200052); /* Monad Purple ke Monad Blue */
   padding: 0.5rem 0;
   width: 100%;
   min-height: 4rem;
@@ -84,20 +85,21 @@ body.dark {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #718096;
+  background-color: #200052; /* Monad Blue */
   transition: 0.4s;
   border-radius: 1.5rem;
+  border: 1px solid #83EEF9; /* Monad Purple untuk border */
 }
 
 body.light .slider {
-  background-color: #718096;
-  border: 1px solid #FFFFFF;
+  background-color: #200052;
+  border: 1px solid #83EEF9;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 body.dark .slider {
-  background-color: #4A5568;
-  border: 1px solid #FFFFFF;
+  background-color: #200052;
+  border: 1px solid #83EEF9;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
 
@@ -110,24 +112,24 @@ body.dark .slider {
   width: 1rem;
   left: 0.25rem;
   bottom: 0.25rem;
-  background-color: white;
+  background-color: #83EEF9; /* Monad Purple */
   transition: 0.4s;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.7rem;
-  color: #F1C40F; /* Warna kuning untuk matahari */
+  color: #FFFFFF; /* White */
 }
 
 input:checked + .slider {
-  background-color: #00C4FF;
+  background-color: #83EEF9; /* Monad Purple */
 }
 
 input:checked + .slider:before {
   transform: translateX(1rem);
   content: "\f186"; /* Font Awesome: Ikon bulan */
-  color: #FFFFFF;
+  color: #200052; /* Monad Blue */
 }
 
 .game-title {
@@ -140,8 +142,8 @@ input:checked + .slider:before {
 }
 
 .mon-logo {
-  background-color: #2F4F4F;
-  color: #FFFFFF;
+  background-color: #A0055D; /* Monad Berry */
+  color: #FFFFFF; /* White */
   padding: 0.3rem 0.6rem;
   font-size: 1.5rem;
   font-weight: 700;
@@ -149,7 +151,7 @@ input:checked + .slider:before {
 }
 
 .flipcoin-text {
-  color: white;
+  color: #FFFFFF; /* White */
   font-size: 2rem;
   font-weight: 700;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
@@ -175,8 +177,8 @@ input:checked + .slider:before {
   transition: all 0.3s ease;
   min-width: 120px;
   touch-action: manipulation;
-  background-color: #00C4FF;
-  color: white;
+  background-color: #83EEF9; /* Monad Purple */
+  color: #0E100F; /* Monad Black */
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -185,13 +187,13 @@ input:checked + .slider:before {
 
 .connect-button:hover,
 .wallet-connected:hover {
-  background-color: #00A3CC;
+  background-color: #A0055D; /* Monad Berry */
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .wallet-connected {
-  background-color: #00C4FF;
+  background-color: #83EEF9; /* Monad Purple */
 }
 
 .disconnect-button {
@@ -199,14 +201,14 @@ input:checked + .slider:before {
   border: none;
   cursor: pointer;
   font-size: 1rem;
-  color: #E74C3C;
+  color: #A0055D; /* Monad Berry */
   padding: 0;
   margin-left: 0.5rem;
   transition: color 0.3s ease;
 }
 
 .disconnect-button:hover {
-  color: #FF6B6B;
+  color: #83EEF9; /* Monad Purple */
 }
 
 /* Container Utama */
@@ -220,11 +222,11 @@ input:checked + .slider:before {
 }
 
 body.light .app-container {
-  background-color: #FFFFFF;
+  background-color: #FFBFAF9; /* Monad Off-White */
 }
 
 body.dark .app-container {
-  background-color: #1A202C;
+  background-color: #0E100F; /* Monad Black */
 }
 
 /* Pembungkus Konten */
@@ -260,29 +262,31 @@ body.dark .app-container {
   min-width: 120px;
   text-align: center;
   text-transform: uppercase;
+  background-color: #200052; /* Monad Blue */
+  color: #FFFFFF; /* White */
+  border: 1px solid #83EEF9; /* Monad Purple */
 }
 
 body.light .tab-button {
-  background-color: #E0E0E0;
-  color: #1A202C;
+  background-color: #200052;
+  color: #FFFFFF;
 }
 
 body.dark .tab-button {
-  background-color: #5A677A;
+  background-color: #200052;
   color: #FFFFFF;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 /* Pastikan tab aktif selalu biru di kedua mode */
 .tab-button.active {
-  background-color: #00C4FF !important;
-  color: white !important;
+  background-color: #83EEF9 !important; /* Monad Purple */
+  color: #0E100F !important; /* Monad Black */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
 }
 
 .tab-button:hover {
-  background-color: #00A3CC;
-  color: white;
+  background-color: #A0055D; /* Monad Berry */
+  color: #FFFFFF;
 }
 
 /* Play Section */
@@ -296,16 +300,18 @@ body.dark .tab-button {
   flex-direction: column;
   align-items: center;
   gap: 1rem;
+  background-color: #FFFFFF; /* White */
+  border: 1px solid #200052; /* Monad Blue */
 }
 
 body.light .play-section {
-  background-color: #FFFFFF;
-  border: 1px solid #E0E0E0;
+  background-color: #FFFFFF; /* White */
+  border: 1px solid #200052;
 }
 
 body.dark .play-section {
-  background-color: #2D3748;
-  border: 1px solid #A0AEC0;
+  background-color: #200052; /* Monad Blue */
+  border: 1px solid #83EEF9; /* Monad Purple */
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
 
@@ -340,34 +346,37 @@ body.dark .play-section {
   min-width: 100px;
   text-align: center;
   text-transform: uppercase;
+  background-color: #200052; /* Monad Blue */
+  color: #FFFFFF; /* White */
+  border: 1px solid #83EEF9; /* Monad Purple */
 }
 
 body.light .choice-button {
-  background-color: #E0E0E0;
-  color: #1A202C;
+  background-color: #200052;
+  color: #FFFFFF;
 }
 
 body.dark .choice-button {
-  background-color: #5A677A;
+  background-color: #200052;
   color: #FFFFFF;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 /* Pastikan tombol HEAD/TAIL yang dipilih selalu biru di kedua mode */
 .choice-button.selected {
-  background-color: #00C4FF !important;
-  color: white !important;
+  background-color: #83EEF9 !important; /* Monad Purple */
+  color: #0E100F !important; /* Monad Black */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
 }
 
 .choice-button:hover {
-  background-color: #00A3CC;
-  color: white;
+  background-color: #A0055D; /* Monad Berry */
+  color: #FFFFFF;
 }
 
 .choice-button:disabled {
-  background-color: #718096;
+  background-color: #200052; /* Monad Blue */
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 /* Input Section */
@@ -387,30 +396,34 @@ body.dark .choice-button {
   font-size: 1rem;
   box-sizing: border-box;
   text-align: center;
+  background-color: #FFFFFF; /* White */
+  border: 2px solid #200052; /* Monad Blue */
+  color: #0E100F; /* Monad Black */
 }
 
 body.light .bet-input {
   background-color: #FFFFFF;
-  color: #1A202C;
-  border: 2px solid #E0E0E0;
+  border: 2px solid #200052;
+  color: #0E100F;
 }
 
 body.dark .bet-input {
-  background-color: #4A5568;
+  background-color: #200052; /* Monad Blue */
+  border: 2px solid #83EEF9; /* Monad Purple */
   color: #FFFFFF;
-  border: 2px solid #A0AEC0;
 }
 
 .bet-input:focus {
-  border-color: #00C4FF;
+  border-color: #83EEF9; /* Monad Purple */
   outline: none;
-  box-shadow: 0 0 5px rgba(0, 196, 255, 0.5);
+  box-shadow: 0 0 5px rgba(131, 110, 249, 0.5);
 }
 
 .bet-input:disabled {
-  background-color: #718096;
-  border-color: #718096;
-  color: #A0AEC0;
+  background-color: #200052; /* Monad Blue */
+  border-color: #83EEF9; /* Monad Purple */
+  color: #FFFFFF;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
@@ -424,23 +437,24 @@ body.dark .bet-input {
   transition: all 0.3s ease;
   min-width: 100px;
   touch-action: manipulation;
-  background-color: #00C4FF;
-  color: white;
+  background-color: #83EEF9; /* Monad Purple */
+  color: #0E100F; /* Monad Black */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   text-transform: uppercase;
 }
 
 .guess-button:hover {
-  background-color: #00A3CC;
+  background-color: #A0055D; /* Monad Berry */
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .guess-button:disabled {
-  background-color: #718096;
+  background-color: #200052; /* Monad Blue */
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+  opacity: 0.6;
 }
 
 .result-message {
@@ -457,24 +471,24 @@ body.dark .bet-input {
 }
 
 body.light .result-message {
-  background-color: #FFE6E6;
-  color: #e72e19;
+  background-color: #A0055D; /* Monad Berry */
+  color: #FFFFFF; /* White */
 }
 
 body.dark .result-message {
-  background-color: #5A677A;
-  color: #ffffff;
+  background-color: #A0055D; /* Monad Berry */
+  color: #FFFFFF; /* White */
 }
 
 .result-message.win-animation {
-  background: linear-gradient(135deg, #2ECC71, #27AE60);
-  color: white;
+  background: linear-gradient(135deg, #83EEF9, #200052); /* Monad Purple ke Monad Blue */
+  color: #FFFFFF; /* White */
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .result-message.lose-animation {
-  background: linear-gradient(135deg, #E74C3C, #C0392B);
-  color: white;
+  background: linear-gradient(135deg, #A0055D, #0E100F); /* Monad Berry ke Monad Black */
+  color: #FFFFFF; /* White */
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
 }
 
@@ -485,11 +499,11 @@ body.dark .result-message {
 }
 
 body.light .connect-prompt {
-  color: #718096;
+  color: #200052; /* Monad Blue */
 }
 
 body.dark .connect-prompt {
-  color: #E2E8F0;
+  color: #83EEF9; /* Monad Purple */
 }
 
 /* Animasi Flip Koin */
@@ -523,13 +537,13 @@ body.dark .connect-prompt {
 }
 
 body.light .history-section {
-  background-color: #FFFFFF;
-  border: 1px solid #E0E0E0;
+  background-color: #FFFFFF; /* White */
+  border: 1px solid #200052; /* Monad Blue */
 }
 
 body.dark .history-section {
-  background-color: #2D3748;
-  border: 1px solid #A0AEC0;
+  background-color: #200052; /* Monad Blue */
+  border: 1px solid #83EEF9; /* Monad Purple */
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
 
@@ -543,16 +557,16 @@ body.dark .history-section {
   padding: 1rem;
   border-radius: 0.75rem;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  border-left: 6px solid #00C4FF;
+  border-left: 6px solid #83EEF9; /* Monad Purple */
   transition: transform 0.3s ease;
 }
 
 body.light .history-card {
-  background-color: #F8F9FA;
+  background-color: #FFBFAF9; /* Monad Off-White */
 }
 
 body.dark .history-card {
-  background-color: #5A677A;
+  background-color: #0E100F; /* Monad Black */
 }
 
 .history-card:hover {
@@ -568,11 +582,11 @@ body.dark .history-card {
 }
 
 body.light .history-card-header {
-  border-bottom: 1px solid #E0E0E0;
+  border-bottom: 1px solid #200052; /* Monad Blue */
 }
 
 body.dark .history-card-header {
-  border-bottom: 1px solid #A0AEC0;
+  border-bottom: 1px solid #83EEF9; /* Monad Purple */
 }
 
 .timestamp {
@@ -580,11 +594,11 @@ body.dark .history-card-header {
 }
 
 body.light .timestamp {
-  color: #718096;
+  color: #200052; /* Monad Blue */
 }
 
 body.dark .timestamp {
-  color: #E2E8F0;
+  color: #83EEF9; /* Monad Purple */
 }
 
 .result {
@@ -593,11 +607,11 @@ body.dark .timestamp {
 }
 
 .result.won {
-  color: #2ECC71;
+  color: #83EEF9; /* Monad Purple */
 }
 
 .result.lost {
-  color: #E74C3C;
+  color: #A0055D; /* Monad Berry */
 }
 
 .history-card-body p {
@@ -606,15 +620,15 @@ body.dark .timestamp {
 }
 
 body.light .history-card-body p {
-  color: #1A202C;
+  color: #0E100F; /* Monad Black */
 }
 
 body.dark .history-card-body p {
-  color: #E2E8F0;
+  color: #FFFFFF; /* White */
 }
 
 .history-card-body a {
-  color: #00C4FF;
+  color: #83EEF9; /* Monad Purple */
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -632,11 +646,11 @@ body.dark .history-card-body p {
 }
 
 body.light .no-history {
-  color: #718096;
+  color: #200052; /* Monad Blue */
 }
 
 body.dark .no-history {
-  color: #E2E8F0;
+  color: #83EEF9; /* Monad Purple */
 }
 
 /* Footer */
@@ -651,11 +665,11 @@ body.dark .no-history {
 }
 
 body.light .app-footer {
-  background-color: #FFFFFF;
+  background-color: #FFBFAF9; /* Monad Off-White */
 }
 
 body.dark .app-footer {
-  background-color: #1A202C;
+  background-color: #0E100F; /* Monad Black */
 }
 
 .footer-text {
@@ -668,15 +682,15 @@ body.dark .app-footer {
 }
 
 body.light .footer-text {
-  color: #718096;
+  color: #200052; /* Monad Blue */
 }
 
 body.dark .footer-text {
-  color: #E2E8F0;
+  color: #83EEF9; /* Monad Purple */
 }
 
 .footer-text a {
-  color: #00C4FF;
+  color: #A0055D; /* Monad Berry */
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -685,15 +699,15 @@ body.dark .footer-text {
 }
 
 body.light .footer-text a {
-  color: #00A3CC;
+  color: #A0055D; /* Monad Berry */
 }
 
 body.dark .footer-text a {
-  color: #00C4FF;
+  color: #83EEF9; /* Monad Purple */
 }
 
 .footer-text a:hover {
-  color: #FF6B6B;
+  color: #83EEF9; /* Monad Purple */
   text-decoration: underline;
 }
 
