@@ -1,0 +1,15 @@
+{
+  "short_name": "MonFlip",
+  "name": "MonFlip - Monad Coin Flip Game",
+  "icons": [
+    {
+      "src": "logo-dark.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1A1F2C",
+  "background_color": "#FFFFFF"
+}

@@ -1,13 +1,45 @@
-/* index.css */
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    /* Default styling untuk light mode (jika diimplementasikan) */
+    @apply bg-light-main-bg text-light-text-primary;
+    font-family: 'Inter', Arial, sans-serif; /* Menggunakan font dari config */
+    line-height: 1.6;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  html.dark body {
+    /* Styling untuk dark mode menggunakan warna baru */
+    @apply bg-dark-main-bg text-dark-text-primary;
+  }
+
+  /* Gaya untuk scrollbar yang lebih elegan */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  /* Scrollbar track untuk light mode */
+  html:not(.dark) ::-webkit-scrollbar-track {
+    @apply bg-light-main-bg rounded-md;
+  }
+  /* Scrollbar track untuk dark mode */
+  html.dark ::-webkit-scrollbar-track {
+    @apply bg-dark-container-bg rounded-md; /* Menggunakan dark-container-bg untuk track di dark mode */
+  }
+
+  /* Scrollbar thumb (berlaku untuk light dan dark mode) */
+  ::-webkit-scrollbar-thumb {
+    @apply bg-brand-gold rounded-md;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-opacity-80; /* Sedikit transparan saat hover */
   }
 }

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect width="1200" height="630" fill="#1A1F2C" />
+  <text x="50%" y="40%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="100" font-weight="bold" fill="#FFFFFF">
+    MonetaFlip
+  </text>
+  <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="#A0AEC0">
+    Fair Coin Flip Game on Monad
+  </text>
+  <circle cx="50%" cy="75%" r="50" fill="#F1B82D" />
+  <text x="50%" y="75%" dominant-baseline="middle" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#1A1F2C">
+    M
+  </text>
+</svg>

@@ -1,18 +1,14 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
-import './index.css'; // Import default CSS dari Vite
+import './index.css'; // Pastikan ini mengarah ke index.css yang berisi @tailwind directives
 import { createAppKit } from '@reown/appkit/react';
 import { EthersAdapter } from '@reown/appkit-adapter-ethers';
-import { monadTestnet } from '@reown/appkit/networks'; // Impor monadTestnet dari library
+import { monadTestnet } from '@reown/appkit/networks';
 
-// 1. Project ID dari Reown Cloud
-const projectId = 'b56e18d47c72ab683b10814fe9495694'; // Ganti dengan projectId dari https://cloud.reown.com
-
-// 2. Set jaringan
+//
+const projectId = 'b56e18d47c72ab683b10814fe9495694';
 const networks = [monadTestnet];
-
-// 3. Metadata
 const metadata = {
   name: 'MON Flipcoin - Blockchain Game on Monad Testnet',
   description: 'Play MON Flipcoin on Monad Testnet, choose Head or Tail, and win MON with a fair and secure gaming experience.',
@@ -20,7 +16,6 @@ const metadata = {
   icons: ['https://i.ibb.co.com/xtrMr8pf/coin.png'], // Ganti dengan ikonmu
 };
 
-// 4. Buat instance AppKit
 createAppKit({
   adapters: [new EthersAdapter()],
   networks,

@@ -2,422 +2,174 @@ import { useState, useEffect } from 'react';
 import { useAppKit, useAppKitProvider, useAppKitAccount, useAppKitNetwork, useDisconnect } from '@reown/appkit/react';
 import { BrowserProvider, Contract, formatEther, parseEther, Interface } from 'ethers';
 import { monadTestnet } from '@reown/appkit/networks';
-import './App.css';
-import { FaWallet, FaSignOutAlt } from 'react-icons/fa';
+import contractAbi from './contractAbi.json';
+import './index.css'; // Mengimpor index.css yang berisi Tailwind directives
 
-const contractAbi = [
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "bet",
-				"type": "uint256"
-			}
-		],
-		"name": "BetPlaced",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "enum CoinflipGame.Choice",
-				"name": "_choice",
-				"type": "uint8"
-			}
-		],
-		"name": "flipCoin",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "enum CoinflipGame.Choice",
-				"name": "playerChoice",
-				"type": "uint8"
-			},
-			{
-				"indexed": false,
-				"internalType": "bool",
-				"name": "result",
-				"type": "bool"
-			},
-			{
-				"indexed": false,
-				"internalType": "bool",
-				"name": "won",
-				"type": "bool"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "bet",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "bytes32",
-				"name": "requestId",
-				"type": "bytes32"
-			}
-		],
-		"name": "FlipResult",
-		"type": "event"
-	},
-	{
-		"inputs": [],
-		"name": "fundGamePool",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "depositor",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "toGamePool",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "toReserve",
-				"type": "uint256"
-			}
-		],
-		"name": "FundsDeposited",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "bool",
-				"name": "toGamePool",
-				"type": "bool"
-			}
-		],
-		"name": "FundsMoved",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "recipient",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "FundsWithdrawn",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "moveFromGamePool",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "moveToGamePool",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "withdrawAllFunds",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"stateMutability": "payable",
-		"type": "receive"
-	},
-	{
-		"inputs": [],
-		"name": "contractBalance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "gamePool",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getContractBalance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getTotalBalance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "MIN_BET",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "owner",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
-];
+import HeaderComponent from './components/HeaderComponent';
+import PlaySection from './components/PlaySection';
+import HistorySection from './components/HistorySection';
+import FooterComponent from './components/FooterComponent';
 
-const contractAddress = '0x664e248c39cd70Fa333E9b2544beEd6A7a2De09b'; // Pastikan alamat ini sesuai
+const contractAddress = '0x664e248c39cd70Fa333E9b2544beEd6A7a2De09b';
 const explorerUrl = 'https://testnet.monadexplorer.com';
 
 function App() {
   const [choice, setChoice] = useState(null);
   const [bet, setBet] = useState('0.01');
   const [result, setResult] = useState('');
+  const [resultType, setResultType] = useState('info'); // 'info', 'success', 'error', 'processing', 'lose'
   const [gamePoolBalance, setGamePoolBalance] = useState(null);
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('theme');
+      // Default ke dark mode jika tidak ada tema tersimpan atau jika tema tersimpan tidak valid
+      return ['light', 'dark'].includes(savedTheme) ? savedTheme : 'dark';
+    }
+    return 'dark'; // Fallback jika tidak di browser (misalnya SSR)
+  });
   const [activeTab, setActiveTab] = useState('play');
-  const [history, setHistory] = useState([]);
-  const [animationClass, setAnimationClass] = useState('');
-  const [coinResult, setCoinResult] = useState(null);
+  const [history, setHistory] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedHistory = localStorage.getItem('monFlipHistory');
+      return savedHistory ? JSON.parse(savedHistory) : [];
+    }
+    return [];
+  });
+  const [coinResult, setCoinResult] = useState(null); // Path gambar koin hasil
+  const [isFlipping, setIsFlipping] = useState(false);
 
   const { open } = useAppKit();
   const { address, isConnected, status } = useAppKitAccount({ namespace: 'eip155' });
   const { walletProvider } = useAppKitProvider('eip155');
-  const { caipNetwork, chainId } = useAppKitNetwork();
+  const { chainId } = useAppKitNetwork();
   const { disconnect } = useDisconnect();
 
   useEffect(() => {
-    document.body.classList.remove('light', 'dark');
-    document.body.classList.add(theme);
-    localStorage.setItem('theme', theme);
+    if (typeof window !== 'undefined') {
+      const root = window.document.documentElement; // Target <html> tag
+      if (theme === 'dark') {
+        root.classList.add('dark');
+        root.classList.remove('light'); // Pastikan light class dihapus
+      } else {
+        root.classList.add('light');
+        root.classList.remove('dark'); // Pastikan dark class dihapus
+      }
+      localStorage.setItem('theme', theme);
+    }
   }, [theme]);
 
   useEffect(() => {
-    const fetchBalances = async () => {
-      if (isConnected && walletProvider) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('monFlipHistory', JSON.stringify(history));
+    }
+  }, [history]);
+
+  useEffect(() => {
+    const fetchGamePoolBalance = async () => {
+      if (isConnected && walletProvider && chainId === monadTestnet.id) {
         try {
           const ethersProvider = new BrowserProvider(walletProvider);
           const contract = new Contract(contractAddress, contractAbi, ethersProvider);
           const gamePoolWei = await contract.gamePool();
-          const contractBalanceWei = await contract.getContractBalance();
-          const totalBalanceWei = await contract.getTotalBalance();
           setGamePoolBalance(parseFloat(formatEther(gamePoolWei)).toFixed(4));
         } catch (error) {
-          console.error('Error fetching balances:', error);
+          console.error('Error fetching game pool balance:', error);
           setGamePoolBalance('N/A');
+          // displayMessage("Could not fetch game pool balance.", "error", true, 3000);
         }
       } else {
         setGamePoolBalance(null);
       }
     };
-    fetchBalances();
-  }, [isConnected, walletProvider]);
+    fetchGamePoolBalance();
+    // Fetch juga setelah flip selesai (dependency isFlipping)
+  }, [isConnected, walletProvider, chainId, isFlipping]);
+
+  const displayMessage = (message, type = 'info', temporary = false, duration = 5000) => {
+    setResult(message);
+    setResultType(type);
+    if (temporary) {
+      const timeoutId = setTimeout(() => {
+        setResult(prevResult => {
+          if (prevResult === message) {
+            setResultType('info'); 
+            return ''; 
+          }
+          return prevResult; 
+        });
+      }, duration);
+      return () => clearTimeout(timeoutId); 
+    }
+  };
 
   async function flipCoin() {
     if (!isConnected) {
-      setResult('Please connect the wallet first!');
+      displayMessage('Please connect your wallet first!', 'error', true);
       return;
     }
     if (chainId !== monadTestnet.id) {
-      setResult('False network!Use Monad TestNet.');
+      displayMessage('Incorrect network! Please use Monad TestNet.', 'error', true);
       return;
     }
     if (!choice) {
-      setResult('Choose a head or tail!');
+      displayMessage('Please choose HEADS or TAILS!', 'error', true, 3000);
       return;
     }
     const betAmount = parseFloat(bet);
     if (isNaN(betAmount) || betAmount <= 0 || betAmount > 1000) {
-      setResult('Enter the valid amount of bet (maximum 1000 mon)!');
+      displayMessage('Enter a valid bet amount (0.01 - 1000 MON)!', 'error', true, 3000);
       return;
     }
-    const betWei = parseEther(bet.toString());
+    if (gamePoolBalance !== null && gamePoolBalance !== 'N/A' && parseFloat(gamePoolBalance) < betAmount * 2) {
+      displayMessage('Game pool balance is too low for this bet. Contact admin.', 'error', true);
+      return;
+    }
 
-    if (gamePoolBalance !== null && parseFloat(gamePoolBalance) < betAmount * 2) {
-      setResult('Game pool balance is not enough to pay for victory.Please contact the admin to add funds.');
-      return;
-    }
+    setIsFlipping(true);
+    displayMessage('Processing your flip...', 'processing');
+    setCoinResult(null); // Reset tampilan koin sebelum animasi
 
     try {
-      // Atur ulang state sebelum memulai bet baru
-      setResult('Processing bet ...');
-      setAnimationClass('');
-      setCoinResult(null);
-
+      const betWei = parseEther(bet.toString());
       const ethersProvider = new BrowserProvider(walletProvider);
       const signer = await ethersProvider.getSigner();
       const contract = new Contract(contractAddress, contractAbi, signer);
 
-      // Panggil fungsi flipCoin
       const tx = await contract.flipCoin(choice === 'head' ? 0 : 1, { value: betWei, gasLimit: 150000 });
-      console.log('Transaction sent, hash:', tx.hash);
-
       const receipt = await tx.wait();
-      console.log('Transaction receipt:', receipt);
 
-      // Coba cari event FlipResult langsung
-      let event = receipt.events?.find((e) => e.event === 'FlipResult');
-
-      // Jika event tidak ditemukan, parse log secara manual
-      if (!event && receipt.logs) {
+      let event;
+      if (receipt.logs) {
         const iface = new Interface(contractAbi);
         for (const log of receipt.logs) {
           try {
             const parsedLog = iface.parseLog(log);
             if (parsedLog && parsedLog.name === 'FlipResult') {
-              event = {
-                args: parsedLog.args,
-              };
+              event = { args: parsedLog.args };
               break;
             }
-          } catch (error) {
-            console.warn('Failed to parse log:', log, error);
-          }
+          } catch (e) { /* ignore parse errors for other events */ }
         }
       }
 
       if (!event) {
         console.warn('FlipResult event not found in receipt:', receipt);
-        setResult('Warning: Flipresult event is not found.Transactions may be successful, check explorer.');
-        return;
+        displayMessage('Warning: FlipResult event not found. Check explorer.', 'error');
+        // setIsFlipping(false); // Sudah dihandle di finally
+        return; // Keluar dari fungsi jika event tidak ditemukan
       }
 
-      // Proses event FlipResult
       const won = event.args.won;
       const amount = event.args.amount.toString();
       const amountMon = parseFloat(formatEther(amount));
-      const resultText = won ? `Win! Rewards: +${amountMon.toFixed(4)} MON` : `Lose! Rewards: -${betAmount.toFixed(4)} MON`;
-      setResult(resultText);
-      setAnimationClass(won ? 'win-animation' : 'lose-animation');
+      const actualCoinSide = event.args.result ? 'head' : 'tail'; // true for Head, false for Tail
+      
+      // Ganti path gambar koin sesuai hasil
+      setCoinResult(actualCoinSide); 
 
-      const coinOutcome = event.args.result ? 'head' : 'tail';
-      setCoinResult(coinOutcome);
-
+      const resultText = won ? `You Won! +${amountMon.toFixed(4)} MON` : `You Lost! -${betAmount.toFixed(4)} MON`;
+      displayMessage(resultText, won ? 'success' : 'lose', true, 7000);
+      
       const timestamp = new Date().toLocaleString();
       const historyEntry = {
         timestamp,
@@ -425,186 +177,86 @@ function App() {
         choice,
         won,
         amount: won ? `+${amountMon.toFixed(4)} MON` : `-${betAmount.toFixed(4)} MON`,
-        coinResult: coinOutcome,
+        coinResult: actualCoinSide,
       };
-      setHistory((prev) => [historyEntry, ...prev]);
-      setChoice(null);
+      setHistory((prev) => [historyEntry, ...prev.slice(0, 49)]); // Keep last 50 entries
+      setChoice(null); // Reset pilihan setelah flip
 
-      // Perbarui gamePoolBalance setelah transaksi
-      const gamePoolWei = await contract.gamePool();
-      setGamePoolBalance(parseFloat(formatEther(gamePoolWei)).toFixed(4));
     } catch (error) {
       console.error('Error during flipCoin:', error);
-      if (error.reason === 'Insufficient game pool to pay winnings') {
-        setResult('Game pool balance is not enough to pay for victory.Please contact the admin to add funds.');
-      } else if (error.code === 'CALL_EXCEPTION' && error.data && error.data.includes('0x4e487b71')) {
-        setResult('Mathematical errors occur (overflow).Please check the amount of your bet and try again.');
-      } else if (error.message.includes('revert')) {
-        setResult('Ttransactions failed in the blockchain.Check explorer for details.');
-      } else {
-        setResult('Error: Transaction Failed.Please try again or check Explorer for details.');
+      let userMessage = 'Transaction Failed. Please try again or check Explorer.';
+      if (error.reason) { 
+        userMessage = error.reason;
+      } else if (error.message) {
+        if (error.message.includes('Insufficient game pool')) {
+            userMessage = 'Game pool balance is too low. Contact admin.';
+        } else if (error.message.includes('overflow')) {
+            userMessage = 'Mathematical error (overflow). Check bet amount.';
+        } else if (error.message.includes('reverted')) {
+            userMessage = 'Transaction reverted by the contract.';
+        }
       }
+      displayMessage(userMessage, 'error', true);
+    } finally {
+      setIsFlipping(false);
     }
   }
 
   const openConnectModal = () => open({ view: 'Connect', namespace: 'eip155' });
+  
   const handleDisconnect = async () => {
     await disconnect();
-    setResult('');
+    displayMessage('', 'info'); // Clear result message
     setBet('0.01');
-    setGamePoolBalance(null);
-    setHistory([]);
+    // Game pool balance akan direset oleh useEffect
     setChoice(null);
-    setCoinResult(null);
-    setAnimationClass('');
+    setCoinResult(null); // Reset gambar koin ke default
+    setIsFlipping(false);
   };
-  const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  
+  const toggleTheme = () => {
+    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+  };
 
   return (
-    <div className="app-wrapper">
-      <header className="app-header">
-        <div className="content-wrapper header-content">
-          <label className="theme-switch">
-            <input type="checkbox" checked={theme === 'dark'} onChange={toggleTheme} />
-            <span className="slider">
-              <span className="theme-circle"></span>
-            </span>
-          </label>
-          <div className="game-title">
-            <span className="mon-logo">MON</span>
-            <span className="flipcoin-text">FLIPCOIN</span>
-          </div>
-          <div className="wallet-section">
-            {!isConnected ? (
-              <button onClick={openConnectModal} className="connect-button animate-pop">
-                <FaWallet /> Connect Wallet
-              </button>
-            ) : (
-              <div className="wallet-connected">
-                <FaWallet /> {address.slice(0, 6)}...{address.slice(-4)}
-                <button onClick={handleDisconnect} className="disconnect-button animate-pop">
-                  <FaSignOutAlt />
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-      <main className="app-container">
-        <div className="content-wrapper">
-          <div className="tab-section">
-            <button
-              className={`tab-button ${activeTab === 'play' ? 'active' : ''}`}
-              onClick={() => setActiveTab('play')}
-            >
-              PLAY
-            </button>
-            <button
-              className={`tab-button ${activeTab === 'history' ? 'active' : ''}`}
-              onClick={() => setActiveTab('history')}
-            >
-              HISTORY
-            </button>
-          </div>
-          {activeTab === 'play' ? (
-            !isConnected ? (
-              <p className="connect-prompt">Please connect the wallet to start.</p>
-            ) : (
-              <div className="play-section animate-slide-up">
-                <div className="coin-icon">
-                  <img
-                    src={coinResult === 'head' ? '/coin-head.png' : coinResult === 'tail' ? '/coin-tail.png' : '/coin.png'}
-                    alt="Coin"
-                    className={coinResult ? 'flip-animation' : ''}
-                  />
-                </div>
-                <div className="coinflip-choice">
-                  <button
-                    className={`choice-button ${choice === 'head' ? 'selected' : ''}`}
-                    onClick={() => setChoice('head')}
-                  >
-                    HEAD
-                  </button>
-                  <button
-                    className={`choice-button ${choice === 'tail' ? 'selected' : ''}`}
-                    onClick={() => setChoice('tail')}
-                  >
-                    TAIL
-                  </button>
-                </div>
-                <div className="input-section">
-                  <input
-                    type="number"
-                    value={bet}
-                    onChange={(e) => setBet(e.target.value)}
-                    placeholder="0.01"
-                    className="bet-input animate-fade-in"
-                    disabled={status !== 'connected' || !choice}
-                    step="0.01"
-                    min="0.01"
-                    max="1000"
-                  />
-                  <button
-                    onClick={flipCoin}
-                    className="guess-button animate-pop"
-                    disabled={status !== 'connected' || !choice}
-                  >
-                    FLIP!!
-                  </button>
-                </div>
-                {result && <div className={`result-message ${animationClass}`}>{result}</div>}
-              </div>
-            )
-          ) : (
-            <div className="history-section animate-slide-up">
-              {history.length === 0 ? (
-                <p className="no-history">There is no game history.</p>
-              ) : (
-                <div className="history-list">
-                  {history.map((entry, index) => (
-                    <div key={index} className="history-card">
-                      <div className="history-card-header">
-                        <span className="timestamp">{entry.timestamp}</span>
-                        <span className={`result ${entry.won ? 'won' : 'lost'}`}>
-                          {entry.choice.toUpperCase()} (Result: {entry.coinResult.toUpperCase()}) - {entry.won ? 'Win' : 'Kalah'} {entry.amount}
-                        </span>
-                      </div>
-                      <div className="history-card-body">
-                        <p>
-                          <strong>Transaction hash:</strong>{' '}
-                          <a
-                            href={`${explorerUrl}/tx/${entry.txHash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            {entry.txHash.slice(0, 6)}...{entry.txHash.slice(-4)}
-                          </a>
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+    // Kelas dasar untuk body akan diatur oleh index.css berdasarkan class 'dark' atau 'light' di <html>
+    <div className="flex flex-col min-h-screen font-sans">
+      <HeaderComponent
+        theme={theme}
+        toggleTheme={toggleTheme}
+        isConnected={isConnected}
+        address={address}
+        openConnectModal={openConnectModal}
+        handleDisconnect={handleDisconnect}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        displayMessage={displayMessage} // displayMessage dipass ke Header untuk notifikasi copy
+      />
+      <main className="flex-grow container mx-auto px-4 py-6 sm:py-8 sm:px-6 lg:px-8 w-full">
+        {activeTab === 'play' && (
+          <PlaySection
+            choice={choice}
+            setChoice={setChoice}
+            bet={bet}
+            setBet={setBet}
+            flipCoin={flipCoin}
+            result={result} // Pesan utama dari App.jsx
+            resultType={resultType} // Tipe pesan dari App.jsx
+            displayMessage={displayMessage} // Fungsi untuk menampilkan pesan dari PlaySection
+            isConnected={isConnected}
+            gamePoolBalance={gamePoolBalance}
+            coinResult={coinResult}
+            isFlipping={isFlipping}
+            explorerUrl={explorerUrl}
+            contractAddress={contractAddress}
+            theme={theme} // Pass theme ke PlaySection jika diperlukan untuk styling internal
+          />
+        )}
+        {activeTab === 'history' && (
+          <HistorySection history={history} explorerUrl={explorerUrl} theme={theme} />
+        )}
       </main>
-      <footer className="app-footer">
-        <div className="footer-text">
-          <span>© 2025 MON Flipcoin by</span>
-          <a href="https://github.com/Semutireng" target="_blank" rel="noopener noreferrer">
-            <i className="fab fa-github"></i> @Semutireng
-          </a>
-          <span>&</span>
-          <a href="https://twitter.com/caridipesbuk" target="_blank" rel="noopener noreferrer">
-            <i className="fab fa-twitter"></i> @caridipesbuk
-          </a>
-          <span>. All rights reserved.</span>
-          <a href="https://yourdonationlink.com" target="_blank" rel="noopener noreferrer">
-            <i className="fas fa-heart"></i> Donate as a thank you!
-          </a>
-        </div>
-      </footer>
+      <FooterComponent contractAddress={contractAddress} />
     </div>
   );
 }
