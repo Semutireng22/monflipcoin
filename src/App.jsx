@@ -1,31 +1,31 @@
 import { useState, useEffect } from 'react';
+// Menggunakan import asli dari proyek Anda
 import { useAppKit, useAppKitProvider, useAppKitAccount, useAppKitNetwork, useDisconnect } from '@reown/appkit/react';
 import { BrowserProvider, Contract, formatEther, parseEther, Interface } from 'ethers';
 import { monadTestnet } from '@reown/appkit/networks';
+// Impor dari file konfigurasi baru
+import { contractAddress, explorerUrl } from './config'; 
 import contractAbi from './contractAbi.json';
-import './index.css'; // Mengimpor index.css yang berisi Tailwind directives
+import './index.css';
 
 import HeaderComponent from './components/HeaderComponent';
 import PlaySection from './components/PlaySection';
 import HistorySection from './components/HistorySection';
 import FooterComponent from './components/FooterComponent';
 
-const contractAddress = '0x664e248c39cd70Fa333E9b2544beEd6A7a2De09b';
-const explorerUrl = 'https://testnet.monadexplorer.com';
-
 function App() {
+  // State asli Anda
   const [choice, setChoice] = useState(null);
   const [bet, setBet] = useState('0.01');
   const [result, setResult] = useState('');
-  const [resultType, setResultType] = useState('info'); // 'info', 'success', 'error', 'processing', 'lose'
+  const [resultType, setResultType] = useState('info');
   const [gamePoolBalance, setGamePoolBalance] = useState(null);
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
       const savedTheme = localStorage.getItem('theme');
-      // Default ke dark mode jika tidak ada tema tersimpan atau jika tema tersimpan tidak valid
       return ['light', 'dark'].includes(savedTheme) ? savedTheme : 'dark';
     }
-    return 'dark'; // Fallback jika tidak di browser (misalnya SSR)
+    return 'dark';
   });
   const [activeTab, setActiveTab] = useState('play');
   const [history, setHistory] = useState(() => {
@@ -35,24 +35,49 @@ function App() {
     }
     return [];
   });
-  const [coinResult, setCoinResult] = useState(null); // Path gambar koin hasil
+  const [coinResult, setCoinResult] = useState(null);
   const [isFlipping, setIsFlipping] = useState(false);
 
+  // <-- PERUBAHAN BARU: State untuk statistik pemain -->
+  const [wins, setWins] = useState(0);
+  const [losses, setLosses] = useState(0);
+
+  // Hooks asli dari @reown/appkit/react
   const { open } = useAppKit();
   const { address, isConnected, status } = useAppKitAccount({ namespace: 'eip155' });
   const { walletProvider } = useAppKitProvider('eip155');
   const { chainId } = useAppKitNetwork();
   const { disconnect } = useDisconnect();
-
+  
+  // <-- PERUBAHAN BARU: Memuat statistik dari localStorage -->
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const root = window.document.documentElement; // Target <html> tag
+        const savedWins = localStorage.getItem('monFlipWins');
+        const savedLosses = localStorage.getItem('monFlipLosses');
+        if (savedWins) setWins(parseInt(savedWins, 10));
+        if (savedLosses) setLosses(parseInt(savedLosses, 10));
+    }
+  }, []);
+
+  // <-- PERUBAHAN BARU: Menyimpan statistik ke localStorage setiap kali ada perubahan -->
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('monFlipWins', wins.toString());
+        localStorage.setItem('monFlipLosses', losses.toString());
+    }
+  }, [wins, losses]);
+
+
+  // Efek-efek lain dari kode asli Anda (tidak diubah)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const root = window.document.documentElement;
       if (theme === 'dark') {
         root.classList.add('dark');
-        root.classList.remove('light'); // Pastikan light class dihapus
+        root.classList.remove('light');
       } else {
         root.classList.add('light');
-        root.classList.remove('dark'); // Pastikan dark class dihapus
+        root.classList.remove('dark');
       }
       localStorage.setItem('theme', theme);
     }
@@ -75,14 +100,12 @@ function App() {
         } catch (error) {
           console.error('Error fetching game pool balance:', error);
           setGamePoolBalance('N/A');
-          // displayMessage("Could not fetch game pool balance.", "error", true, 3000);
         }
       } else {
         setGamePoolBalance(null);
       }
     };
     fetchGamePoolBalance();
-    // Fetch juga setelah flip selesai (dependency isFlipping)
   }, [isConnected, walletProvider, chainId, isFlipping]);
 
   const displayMessage = (message, type = 'info', temporary = false, duration = 5000) => {
@@ -92,13 +115,13 @@ function App() {
       const timeoutId = setTimeout(() => {
         setResult(prevResult => {
           if (prevResult === message) {
-            setResultType('info'); 
-            return ''; 
+            setResultType('info');
+            return '';
           }
-          return prevResult; 
+          return prevResult;
         });
       }, duration);
-      return () => clearTimeout(timeoutId); 
+      return () => clearTimeout(timeoutId);
     }
   };
 
@@ -127,7 +150,7 @@ function App() {
 
     setIsFlipping(true);
     displayMessage('Processing your flip...', 'processing');
-    setCoinResult(null); // Reset tampilan koin sebelum animasi
+    setCoinResult(null);
 
     try {
       const betWei = parseEther(bet.toString());
@@ -148,28 +171,34 @@ function App() {
               event = { args: parsedLog.args };
               break;
             }
-          } catch (e) { /* ignore parse errors for other events */ }
+          } catch (e) { /* ignore */ }
         }
       }
 
       if (!event) {
         console.warn('FlipResult event not found in receipt:', receipt);
         displayMessage('Warning: FlipResult event not found. Check explorer.', 'error');
-        // setIsFlipping(false); // Sudah dihandle di finally
-        return; // Keluar dari fungsi jika event tidak ditemukan
+        return;
       }
 
       const won = event.args.won;
+
+      // <-- PERUBAHAN BARU: Memperbarui statistik -->
+      if (won) {
+        setWins(prev => prev + 1);
+      } else {
+        setLosses(prev => prev + 1);
+      }
+
       const amount = event.args.amount.toString();
       const amountMon = parseFloat(formatEther(amount));
-      const actualCoinSide = event.args.result ? 'head' : 'tail'; // true for Head, false for Tail
-      
-      // Ganti path gambar koin sesuai hasil
-      setCoinResult(actualCoinSide); 
+      const actualCoinSide = event.args.result ? 'head' : 'tail';
+
+      setCoinResult(actualCoinSide);
 
       const resultText = won ? `You Won! +${amountMon.toFixed(4)} MON` : `You Lost! -${betAmount.toFixed(4)} MON`;
       displayMessage(resultText, won ? 'success' : 'lose', true, 7000);
-      
+
       const timestamp = new Date().toLocaleString();
       const historyEntry = {
         timestamp,
@@ -179,13 +208,13 @@ function App() {
         amount: won ? `+${amountMon.toFixed(4)} MON` : `-${betAmount.toFixed(4)} MON`,
         coinResult: actualCoinSide,
       };
-      setHistory((prev) => [historyEntry, ...prev.slice(0, 49)]); // Keep last 50 entries
-      setChoice(null); // Reset pilihan setelah flip
+      setHistory((prev) => [historyEntry, ...prev.slice(0, 49)]);
+      setChoice(null);
 
     } catch (error) {
       console.error('Error during flipCoin:', error);
       let userMessage = 'Transaction Failed. Please try again or check Explorer.';
-      if (error.reason) { 
+      if (error.reason) {
         userMessage = error.reason;
       } else if (error.message) {
         if (error.message.includes('Insufficient game pool')) {
@@ -206,11 +235,10 @@ function App() {
   
   const handleDisconnect = async () => {
     await disconnect();
-    displayMessage('', 'info'); // Clear result message
+    displayMessage('', 'info');
     setBet('0.01');
-    // Game pool balance akan direset oleh useEffect
     setChoice(null);
-    setCoinResult(null); // Reset gambar koin ke default
+    setCoinResult(null);
     setIsFlipping(false);
   };
   
@@ -219,7 +247,6 @@ function App() {
   };
 
   return (
-    // Kelas dasar untuk body akan diatur oleh index.css berdasarkan class 'dark' atau 'light' di <html>
     <div className="flex flex-col min-h-screen font-sans">
       <HeaderComponent
         theme={theme}
@@ -230,7 +257,7 @@ function App() {
         handleDisconnect={handleDisconnect}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        displayMessage={displayMessage} // displayMessage dipass ke Header untuk notifikasi copy
+        displayMessage={displayMessage}
       />
       <main className="flex-grow container mx-auto px-4 py-6 sm:py-8 sm:px-6 lg:px-8 w-full">
         {activeTab === 'play' && (
@@ -240,23 +267,27 @@ function App() {
             bet={bet}
             setBet={setBet}
             flipCoin={flipCoin}
-            result={result} // Pesan utama dari App.jsx
-            resultType={resultType} // Tipe pesan dari App.jsx
-            displayMessage={displayMessage} // Fungsi untuk menampilkan pesan dari PlaySection
+            result={result}
+            resultType={resultType}
+            displayMessage={displayMessage}
             isConnected={isConnected}
             gamePoolBalance={gamePoolBalance}
             coinResult={coinResult}
             isFlipping={isFlipping}
             explorerUrl={explorerUrl}
             contractAddress={contractAddress}
-            theme={theme} // Pass theme ke PlaySection jika diperlukan untuk styling internal
+            theme={theme}
+            // <-- PERUBAHAN BARU: Mengirim props statistik -->
+            wins={wins}
+            losses={losses}
           />
         )}
         {activeTab === 'history' && (
           <HistorySection history={history} explorerUrl={explorerUrl} theme={theme} />
         )}
       </main>
-      <FooterComponent contractAddress={contractAddress} />
+      {/* Footer sekarang akan mengambil config sendiri */}
+      <FooterComponent />
     </div>
   );
 }
