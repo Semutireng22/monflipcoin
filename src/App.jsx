@@ -47,6 +47,18 @@ function App() {
   const [wins, setWins] = useState(0);
   const [losses, setLosses] = useState(0);
 
+  // ====== Gas Stats for UI ======
+  const [gasStats, setGasStats] = useState({
+    estimated: null,     // bigint
+    limit: null,         // bigint
+    used: null,          // bigint (actual from receipt)
+    price: null,         // bigint (effective)
+    estCost: null,       // bigint (limit * maxFeePerGas approx)
+    actualCost: null,    // bigint (used * effectiveGasPrice)
+    submitHash: null,    // tx hash of submit
+    callbackHash: null,  // tx hash of callback (from event)
+  });
+
   // ====== Wallet / Network ======
   const { open } = useAppKit();
   const { address, isConnected } = useAppKitAccount({ namespace: 'eip155' });
@@ -179,8 +191,9 @@ function App() {
     }
 
     setIsFlipping(true);
-    displayMessage('Flip submitted. Waiting VRF randomness...', 'processing');
     setCoinResult(null);
+    setGasStats((g) => ({ ...g, used: null, actualCost: null, callbackHash: null }));
+    displayMessage('Flip submitted. Waiting VRF randomness...', 'processing');
 
     try {
       // signer for write
@@ -196,18 +209,33 @@ function App() {
 
       // estimate gas + buffer + floor(500k)
       const betWei = parseEther(bet.toString());
-      let gasLimit;
+      let gasLimit, estimated;
       try {
-        const est = await writeContract.flipCoin.estimateGas(
+        estimated = await writeContract.flipCoin.estimateGas(
           choice === 'head' ? 0 : 1,
           { value: betWei }
         );
-        gasLimit = (est * 125n) / 100n;         // +25% buffer
+        gasLimit = (estimated * 125n) / 100n;        // +25% buffer
         if (gasLimit < 500000n) gasLimit = 500000n; // floor per rekomendasi Pyth (Monad)
       } catch (estErr) {
         console.warn('estimateGas failed, fallback to 500k:', estErr);
+        estimated = null;
         gasLimit = 500000n;
       }
+
+      // perkiraan biaya (pakai feeData)
+      const feeData = await provider.getFeeData();
+      const maxFee = feeData.maxFeePerGas ?? feeData.gasPrice; // bigint | null
+      const estCost = maxFee && gasLimit ? (gasLimit * maxFee) : null;
+
+      setGasStats((g) => ({
+        ...g,
+        estimated,
+        limit: gasLimit,
+        price: maxFee ?? null,
+        estCost,
+        submitHash: null,
+      }));
 
       // submit
       const tx = await writeContract.flipCoin(
@@ -216,8 +244,22 @@ function App() {
       );
       const submitHash = tx.hash;
 
-      // wait mined (optional)
-      await tx.wait();
+      setGasStats((g) => ({ ...g, submitHash }));
+
+      // wait mined (submit tx)
+      const submitRcpt = await tx.wait();
+
+      // capture used gas/price from submit receipt (bisa undefined di sebagian provider, tapi coba ambil)
+      const used = submitRcpt?.gasUsed ?? null;
+      const effPrice = submitRcpt?.effectiveGasPrice ?? maxFee ?? null;
+      const actualCost = used && effPrice ? (used * effPrice) : null;
+      setGasStats((g) => ({
+        ...g,
+        used,
+        price: effPrice,
+        actualCost,
+      }));
+
       displayMessage('Waiting randomness (VRF)...', 'processing');
 
       // wait for FlipResult (callback tx)
@@ -259,6 +301,8 @@ function App() {
           };
           setHistory((prev) => [historyEntry, ...prev.slice(0, 49)]);
           setChoice(null);
+
+          setGasStats((g) => ({ ...g, callbackHash }));
         } finally {
           setIsFlipping(false);
         }
@@ -282,7 +326,7 @@ function App() {
       let userMessage = 'Transaction Failed. Please try again or check Explorer.';
       const msg = (error?.reason || error?.message || '').toLowerCase();
       if (msg.includes('out of gas')) {
-        userMessage = 'Out of gas. We increased the gas limit; please try again.';
+        userMessage = 'Out of gas. Gas limit increased — please try again.';
       }
       displayMessage(userMessage, 'error', true);
       setIsFlipping(false);
@@ -343,70 +387,8 @@ function App() {
             theme={theme}
             wins={wins}
             losses={losses}
-          />
-        )}
-
-        {activeTab === 'history' && (
-          <HistorySection history={history} explorerUrl={explorerUrl} theme={theme} />
-        )}
-      </main>
-
-      <FooterComponent />
-    </div>
-  );
-}
-
-export default App;ctModal = () => open({ view: 'Connect', namespace: 'eip155' });
-
-  const handleDisconnect = async () => {
-    await disconnect();
-    displayMessage('', 'info');
-    setBet('0.01');
-    setChoice(null);
-    setCoinResult(null);
-    setIsFlipping(false);
-    try {
-      contractRef.current?.removeAllListeners?.('FlipResult');
-    } catch {}
-  };
-
-  const toggleTheme = () =>
-    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
-
-  return (
-    <div className="flex flex-col min-h-screen font-sans">
-      <HeaderComponent
-        theme={theme}
-        toggleTheme={toggleTheme}
-        isConnected={isConnected}
-        address={address}
-        openConnectModal={openConnectModal}
-        handleDisconnect={handleDisconnect}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        displayMessage={displayMessage}
-      />
-
-      <main className="flex-grow container mx-auto px-4 py-6 sm:py-8 sm:px-6 lg:px-8 w-full">
-        {activeTab === 'play' && (
-          <PlaySection
-            choice={choice}
-            setChoice={setChoice}
-            bet={bet}
-            setBet={setBet}
-            flipCoin={flipCoin}
-            result={result}
-            resultType={resultType}
-            displayMessage={displayMessage}
-            isConnected={isConnected}
-            gamePoolBalance={gamePoolBalance}
-            coinResult={coinResult}
-            isFlipping={isFlipping}
-            explorerUrl={explorerUrl}
-            contractAddress={contractAddress}
-            theme={theme}
-            wins={wins}
-            losses={losses}
+            // NEW: kirim gas info ke UI bawah
+            gasStats={gasStats}
           />
         )}
 
