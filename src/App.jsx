@@ -19,7 +19,7 @@ import HistorySection from './components/HistorySection';
 import FooterComponent from './components/FooterComponent';
 
 // Gas floor lebih tinggi dari rekomendasi Pyth (500k)
-const GAS_FLOOR = 300_000n;
+const GAS_FLOOR = 500_000n;
 
 // ===== Util untuk history per-user =====
 const STORAGE_PREFIX = 'monFlipHistory';
