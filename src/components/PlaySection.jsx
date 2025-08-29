@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaSpinner, FaExternalLinkAlt } from 'react-icons/fa';
+import { formatEther } from 'ethers';
 
 // ===== Variants (animasi) =====
 const containerVariants = {
@@ -33,7 +34,6 @@ const coinVariants = {
   },
 };
 
-// ===== Komponen =====
 const PlaySection = ({
   choice,
   setChoice,
@@ -52,6 +52,7 @@ const PlaySection = ({
   theme,
   wins,
   losses,
+  gasStats, // { estimated, limit, used, price, estCost, actualCost, submitHash, callbackHash }
 }) => {
   // Tentukan gambar koin
   const coinImage = isFlipping
@@ -110,13 +111,29 @@ const PlaySection = ({
     betNum > 0 &&
     parseFloat(gamePoolBalance) < betNum * 2;
 
-  // Informasi dan link kontrak
+  // Link kontrak (opsional)
   const onOpenExplorer = () => {
     if (!explorerUrl || !contractAddress) {
       displayMessage?.('Explorer URL atau contract address belum di-set.', 'error', true);
       return;
     }
     window.open(`${explorerUrl}/address/${contractAddress}`, '_blank', 'noopener,noreferrer');
+  };
+
+  // Format helper untuk gas info
+  const fmtGwei = (wei) => {
+    try {
+      return `${Number(wei) / 1e9} gwei`;
+    } catch {
+      return '—';
+    }
+  };
+  const fmtCostMon = (wei) => {
+    try {
+      return `${Number(formatEther(wei)).toFixed(6)} MON`;
+    } catch {
+      return '—';
+    }
   };
 
   return (
@@ -136,27 +153,6 @@ const PlaySection = ({
         >
           Contract <FaExternalLinkAlt className="text-[9px]" />
         </button>
-      </motion.div>
-
-      {/* ===== Pool & Status Bar ===== */}
-      <motion.div
-        variants={itemVariants}
-        className="mb-4 mt-2 flex flex-wrap items-center justify-center gap-3 text-xs sm:text-sm"
-      >
-        <div className="px-3 py-1 rounded-md border border-white/10 bg-black/30">
-          Pool:{" "}
-          <span className="font-bold text-emerald-400">
-            {gamePoolBalance === null ? '—' : gamePoolBalance === 'N/A' ? 'N/A' : `${gamePoolBalance} MON`}
-          </span>
-        </div>
-        <div className="px-3 py-1 rounded-md border border-white/10 bg-black/30">
-          Network: <span className="font-bold">{isConnected ? 'Monad Testnet' : 'Not Connected'}</span>
-        </div>
-        {poolTooLow && (
-          <div className="px-3 py-1 rounded-md border border-red-500/40 bg-red-500/10 text-red-300">
-            Pool too low for this bet
-          </div>
-        )}
       </motion.div>
 
       {/* ===== Coin Portal ===== */}
@@ -242,9 +238,33 @@ const PlaySection = ({
           ))}
         </div>
 
-        {/* Hint kecil */}
-        <div className="text-center text-[11px] text-gray-400/80">
-          Min bet <span className="font-semibold">0.01 MON</span>. Pool safety check: payout must be ≤ pool × 2.
+        {/* ===== Bottom info (sesuai permintaan) ===== */}
+        <div className="mt-3 space-y-1.5 text-center text-[11px] text-gray-300/80">
+          <div>
+            Min bet <span className="font-semibold">0.01 MON</span>. Pool safety check: payout must be ≤ pool × 2.
+          </div>
+          <div>
+            Pool:{' '}
+            <span className="font-semibold text-emerald-400">
+              {gamePoolBalance === null ? '—' : gamePoolBalance === 'N/A' ? 'N/A' : `${gamePoolBalance} MON`}
+            </span>
+          </div>
+          <div className="text-[10px] text-gray-400">
+            {(() => {
+              const est = gasStats?.estimated ? gasStats.estimated.toString() : '—';
+              const lim = gasStats?.limit ? gasStats.limit.toString() : '—';
+              const used = gasStats?.used ? gasStats.used.toString() : '—';
+              const price = gasStats?.price ? fmtGwei(gasStats.price) : '—';
+              const estCost = gasStats?.estCost ? fmtCostMon(gasStats.estCost) : '—';
+              const actCost = gasStats?.actualCost ? fmtCostMon(gasStats.actualCost) : null;
+              return (
+                <>
+                  Gas (flip tx): est {est} / limit {lim} / used {used} • price {price} • cost est {estCost}
+                  {actCost ? ` • cost actual ${actCost}` : ''}
+                </>
+              );
+            })()}
+          </div>
         </div>
       </motion.div>
 
