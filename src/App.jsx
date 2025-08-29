@@ -19,7 +19,21 @@ import HistorySection from './components/HistorySection';
 import FooterComponent from './components/FooterComponent';
 
 // Gas floor lebih tinggi dari rekomendasi Pyth (500k)
-const GAS_FLOOR = 650_000n;
+const GAS_FLOOR = 300_000n;
+
+// ===== Util untuk history per-user =====
+const STORAGE_PREFIX = 'monFlipHistory';
+const keyFor = (addr) => `${STORAGE_PREFIX}:${(addr || 'unknown').toLowerCase()}`;
+const dedupeSort = (entries) => {
+  const m = new Map();
+  for (const e of entries || []) {
+    const k = `${e.txHash || e.submitHash || e.clientId || 'nohash'}:${e.timestamp || ''}`;
+    if (!m.has(k)) m.set(k, e);
+  }
+  return [...m.values()]
+    .sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0))
+    .slice(0, 200);
+};
 
 function App() {
   // ====== UI State ======
@@ -36,13 +50,7 @@ function App() {
     return 'dark';
   });
   const [activeTab, setActiveTab] = useState('play');
-  const [history, setHistory] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const savedHistory = localStorage.getItem('monFlipHistory');
-      return savedHistory ? JSON.parse(savedHistory) : [];
-    }
-    return [];
-  });
+  const [history, setHistory] = useState([]); // per-user (di-load saat address berubah)
   const [coinResult, setCoinResult] = useState(null); // 'head' | 'tail' | null
   const [isFlipping, setIsFlipping] = useState(false);
 
@@ -88,14 +96,7 @@ function App() {
     }
   }, [theme]);
 
-  // ====== History persist ======
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('monFlipHistory', JSON.stringify(history));
-    }
-  }, [history]);
-
-  // ====== Load stats ======
+  // ====== Player stats persist (tetap global per-device) ======
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedWins = localStorage.getItem('monFlipWins');
@@ -110,6 +111,33 @@ function App() {
       localStorage.setItem('monFlipLosses', losses.toString());
     }
   }, [wins, losses]);
+
+  // ====== History per-user: load saat address berubah ======
+  useEffect(() => {
+    if (!address) {
+      setHistory([]);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(keyFor(address));
+      const saved = raw ? JSON.parse(raw) : [];
+      setHistory(dedupeSort(saved));
+    } catch {
+      setHistory([]);
+    }
+  }, [address]);
+
+  // Helper simpan ke storage per-user
+  const saveHistory = (entries) => {
+    if (!address) return;
+    const cleaned = dedupeSort(entries);
+    setHistory(cleaned);
+    try {
+      localStorage.setItem(keyFor(address), JSON.stringify(cleaned));
+    } catch (e) {
+      console.warn('Failed to persist history', e);
+    }
+  };
 
   // ====== Banner helper ======
   const displayMessage = (message, type = 'info', temporary = false, duration = 5000) => {
@@ -201,7 +229,8 @@ function App() {
       let resolved = false;
       const me = (address || '').toLowerCase();
 
-      const finish = (won, amountBN, resultBool, evTxHash) => {
+      // helper untuk finalize & update history
+      const finalize = (won, amountBN, resultBool, evTxHash) => {
         const amountMon = parseFloat(formatEther(amountBN?.toString?.() ?? '0'));
         const actualCoinSide = resultBool ? 'head' : 'tail';
         setCoinResult(actualCoinSide);
@@ -212,19 +241,31 @@ function App() {
           : `You Lost! -${betAmount.toFixed(4)} MON`;
         displayMessage(txt, won ? 'success' : 'lose', true, 7000);
 
-        const timestamp = new Date().toLocaleString();
-        setHistory((prev) => [
-          {
-            timestamp,
-            txHash: evTxHash,
-            choice,
-            won,
-            amount: won ? `+${amountMon.toFixed(4)} MON` : `-${betAmount.toFixed(4)} MON`,
-            coinResult: actualCoinSide,
-          },
-          ...prev.slice(0, 49),
-        ]);
-        setGasStats((g) => ({ ...g, callbackHash: evTxHash }));
+        // Replace pending (jika ada) dengan final
+        const finalEntry = {
+          timestamp: new Date().toISOString(),
+          txHash: evTxHash,
+          choice,
+          won,
+          status: won ? 'won' : 'lost',
+          amount: won ? `+${amountMon.toFixed(4)} MON` : `-${betAmount.toFixed(4)} MON`,
+          coinResult: actualCoinSide,
+        };
+
+        saveHistory((prev => {
+          const current = Array.isArray(prev) ? prev : history;
+          let replaced = false;
+          const updated = current.map((e) => {
+            if (!replaced && e.txHash === evTxHash && (e.status === 'pending' || e.won === undefined)) {
+              replaced = true;
+              return finalEntry;
+            }
+            return e;
+          });
+          if (!replaced) updated.unshift(finalEntry);
+          return updated;
+        })(history));
+
         setChoice(null);
         setIsFlipping(false);
       };
@@ -237,7 +278,7 @@ function App() {
         resolved = true;
         writeContract.off('FlipResult', handler);
         const evTxHash = event?.log?.transactionHash ?? event?.transactionHash;
-        finish(won, amountBN, resultBool, evTxHash);
+        finalize(won, amountBN, resultBool, evTxHash);
       };
 
       writeContract.on('FlipResult', handler);
@@ -272,6 +313,18 @@ function App() {
       setGasStats((g) => ({ ...g, submitHash: tx.hash }));
       displayMessage('Waiting randomness (VRF)...', 'processing');
 
+      // Tambahkan entri pending
+      const pendingEntry = {
+        timestamp: new Date().toISOString(),
+        txHash: tx.hash,
+        choice,
+        won: undefined,
+        status: 'pending',
+        amount: `-${betAmount.toFixed(4)} MON`, // nilai bet di sisi UI
+        coinResult: '', // belum diketahui
+      };
+      saveHistory([pendingEntry, ...history]);
+
       // 5) Tunggu mined untuk isi gas used
       const submitRcpt = await tx.wait();
       const used = submitRcpt?.gasUsed ?? null;
@@ -290,7 +343,7 @@ function App() {
               if (!resolved) {
                 resolved = true;
                 writeContract.off('FlipResult', handler);
-                finish(won, amountBN, resultBool, ev.transactionHash);
+                finalize(won, amountBN, resultBool, ev.transactionHash);
               }
               break;
             }
@@ -317,8 +370,14 @@ function App() {
       const low = (error?.reason || error?.message || '').toLowerCase();
       if (low.includes('out of gas')) msg = 'Out of gas. Gas limit raised; please try again.';
       displayMessage(msg, 'error', true);
+
+      // Tandai pending terakhir sebagai failed (kalau ada submitHash yang sama)
       setIsFlipping(false);
       try { contractRef.current?.removeAllListeners?.('FlipResult'); } catch {}
+
+      // optional: jika ada tx yang sempat dibuat (tidak selalu ada), kita bisa mark failed by matching submitHash
+      // tapi karena di catch kita belum tentu punya tx.hash, kita biarkan pending tetap ada;
+      // pengguna bisa melihat di explorer bila revert.
     }
   }
 
@@ -334,6 +393,7 @@ function App() {
     try {
       contractRef.current?.removeAllListeners?.('FlipResult');
     } catch {}
+    // history disimpan per-user, tidak dihapus saat disconnect
   };
 
   const toggleTheme = () =>
@@ -378,7 +438,12 @@ function App() {
         )}
 
         {activeTab === 'history' && (
-          <HistorySection history={history} explorerUrl={explorerUrl} theme={theme} />
+          <HistorySection
+            history={history}       // daftar terbaru (sudah persistent per-user)
+            explorerUrl={explorerUrl}
+            theme={theme}
+            address={address}       // penting untuk load/simpan per-user
+          />
         )}
       </main>
 
@@ -387,4 +452,4 @@ function App() {
   );
 }
 
-export default App;
+export default App; 
