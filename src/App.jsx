@@ -43,7 +43,7 @@ function App() {
   const [coinResult, setCoinResult] = useState(null); // 'head' | 'tail' | null
   const [isFlipping, setIsFlipping] = useState(false);
 
-  // ====== Player Stats (local) ======
+  // ====== Player Stats ======
   const [wins, setWins] = useState(0);
   const [losses, setLosses] = useState(0);
 
@@ -58,7 +58,7 @@ function App() {
   const providerRef = useRef(null);
   const contractRef = useRef(null);
 
-  // ====== Effects: theme ======
+  // ====== Theme ======
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const root = window.document.documentElement;
@@ -73,14 +73,14 @@ function App() {
     }
   }, [theme]);
 
-  // ====== Effects: history persist ======
+  // ====== History persist ======
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('monFlipHistory', JSON.stringify(history));
     }
   }, [history]);
 
-  // ====== Effects: load stats ======
+  // ====== Load stats ======
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedWins = localStorage.getItem('monFlipWins');
@@ -96,7 +96,7 @@ function App() {
     }
   }, [wins, losses]);
 
-  // ====== Helper: show banner message ======
+  // ====== Banner helper ======
   const displayMessage = (message, type = 'info', temporary = false, duration = 5000) => {
     setResult(message);
     setResultType(type);
@@ -127,7 +127,7 @@ function App() {
         const ethersProvider = new BrowserProvider(walletProvider);
         providerRef.current = ethersProvider;
 
-        // read-only instance for reads
+        // read-only instance
         const roContract = new Contract(contractAddress, contractAbi, ethersProvider);
         contractRef.current = roContract;
 
@@ -141,7 +141,7 @@ function App() {
     setup();
   }, [isConnected, walletProvider, chainId, isFlipping]);
 
-  // ====== Cleanup listeners on unmount / key changes ======
+  // ====== Cleanup listeners ======
   useEffect(() => {
     return () => {
       try {
@@ -150,7 +150,7 @@ function App() {
     };
   }, [address, chainId]);
 
-  // ====== Actions ======
+  // ====== Action: flipCoin with gas handling ======
   async function flipCoin() {
     if (!isConnected) {
       displayMessage('Please connect your wallet first!', 'error', true);
@@ -183,46 +183,57 @@ function App() {
     setCoinResult(null);
 
     try {
-      // connect with signer for write
+      // signer for write
       const provider = providerRef.current ?? new BrowserProvider(walletProvider);
       providerRef.current = provider;
       const signer = await provider.getSigner();
 
-      // ensure contractRef is signer-connected for .on() to work in same object
       const writeContract = new Contract(contractAddress, contractAbi, signer);
       contractRef.current = writeContract;
 
-      // remember the current block to ignore old events
+      // ignore events older than current block
       const startBlock = await provider.getBlockNumber();
 
-      // submit tx
+      // estimate gas + buffer + floor(500k)
       const betWei = parseEther(bet.toString());
-      const tx = await writeContract.flipCoin(choice === 'head' ? 0 : 1, {
-        value: betWei,
-        gasLimit: 150000,
-      });
+      let gasLimit;
+      try {
+        const est = await writeContract.flipCoin.estimateGas(
+          choice === 'head' ? 0 : 1,
+          { value: betWei }
+        );
+        gasLimit = (est * 125n) / 100n;         // +25% buffer
+        if (gasLimit < 500000n) gasLimit = 500000n; // floor per rekomendasi Pyth (Monad)
+      } catch (estErr) {
+        console.warn('estimateGas failed, fallback to 500k:', estErr);
+        gasLimit = 500000n;
+      }
+
+      // submit
+      const tx = await writeContract.flipCoin(
+        choice === 'head' ? 0 : 1,
+        { value: betWei, gasLimit }
+      );
       const submitHash = tx.hash;
 
       // wait mined (optional)
       await tx.wait();
       displayMessage('Waiting randomness (VRF)...', 'processing');
 
+      // wait for FlipResult (callback tx)
       let resolved = false;
       const me = (address || '').toLowerCase();
 
       const onFlipResult = (player, playerChoice, resultBool, won, amountBN, betBN, requestId, event) => {
         try {
-          // filter by player & block
           if (!player || player.toLowerCase() !== me) return;
           const blk = event?.log?.blockNumber ?? 0;
           if (blk < startBlock) return;
           if (resolved) return;
           resolved = true;
 
-          // stop listening for this round
           writeContract.off('FlipResult', onFlipResult);
 
-          // parse values
           const amount = amountBN?.toString?.() ?? '0';
           const amountMon = parseFloat(formatEther(amount));
           const actualCoinSide = resultBool ? 'head' : 'tail';
@@ -253,10 +264,9 @@ function App() {
         }
       };
 
-      // listen for only this user's result
       writeContract.on('FlipResult', onFlipResult);
 
-      // give user info if callback is slow
+      // info if callback slow
       setTimeout(() => {
         if (!resolved) {
           displayMessage(
@@ -270,16 +280,9 @@ function App() {
     } catch (error) {
       console.error('Error during flipCoin:', error);
       let userMessage = 'Transaction Failed. Please try again or check Explorer.';
-      if (error?.reason) {
-        userMessage = error.reason;
-      } else if (error?.message) {
-        if (error.message.includes('Insufficient game pool')) {
-          userMessage = 'Game pool balance is too low. Contact admin.';
-        } else if (error.message.includes('overflow')) {
-          userMessage = 'Mathematical error (overflow). Check bet amount.';
-        } else if (error.message.includes('reverted')) {
-          userMessage = 'Transaction reverted by the contract.';
-        }
+      const msg = (error?.reason || error?.message || '').toLowerCase();
+      if (msg.includes('out of gas')) {
+        userMessage = 'Out of gas. We increased the gas limit; please try again.';
       }
       displayMessage(userMessage, 'error', true);
       setIsFlipping(false);
@@ -290,6 +293,70 @@ function App() {
   }
 
   const openConnectModal = () => open({ view: 'Connect', namespace: 'eip155' });
+
+  const handleDisconnect = async () => {
+    await disconnect();
+    displayMessage('', 'info');
+    setBet('0.01');
+    setChoice(null);
+    setCoinResult(null);
+    setIsFlipping(false);
+    try {
+      contractRef.current?.removeAllListeners?.('FlipResult');
+    } catch {}
+  };
+
+  const toggleTheme = () =>
+    setTheme((prevTheme) => (prevTheme === 'light' ? 'dark' : 'light'));
+
+  return (
+    <div className="flex flex-col min-h-screen font-sans">
+      <HeaderComponent
+        theme={theme}
+        toggleTheme={toggleTheme}
+        isConnected={isConnected}
+        address={address}
+        openConnectModal={openConnectModal}
+        handleDisconnect={handleDisconnect}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        displayMessage={displayMessage}
+      />
+
+      <main className="flex-grow container mx-auto px-4 py-6 sm:py-8 sm:px-6 lg:px-8 w-full">
+        {activeTab === 'play' && (
+          <PlaySection
+            choice={choice}
+            setChoice={setChoice}
+            bet={bet}
+            setBet={setBet}
+            flipCoin={flipCoin}
+            result={result}
+            resultType={resultType}
+            displayMessage={displayMessage}
+            isConnected={isConnected}
+            gamePoolBalance={gamePoolBalance}
+            coinResult={coinResult}
+            isFlipping={isFlipping}
+            explorerUrl={explorerUrl}
+            contractAddress={contractAddress}
+            theme={theme}
+            wins={wins}
+            losses={losses}
+          />
+        )}
+
+        {activeTab === 'history' && (
+          <HistorySection history={history} explorerUrl={explorerUrl} theme={theme} />
+        )}
+      </main>
+
+      <FooterComponent />
+    </div>
+  );
+}
+
+export default App;ctModal = () => open({ view: 'Connect', namespace: 'eip155' });
 
   const handleDisconnect = async () => {
     await disconnect();
